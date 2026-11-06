@@ -31,6 +31,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: Android
+          unityVersion: 2022.3.20f1
           buildMethod: EndlessCrowdRunner.Editor.BuildPipelineHelper.BuildAndroidApk
           buildsPath: Builds
 
