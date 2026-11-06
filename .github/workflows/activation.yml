@@ -17,6 +17,7 @@ jobs:
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE":/project \
+            -w /project \
             unityci/editor:ubuntu-2022.3.20f1-android-3 \
             unity-editor -batchmode -nographics -createManualActivationFile -logfile /dev/stdout || true
           ls -la
@@ -25,4 +26,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: manual-activation-file
-          path: '**/*.alf'
+          path: '*.alf'
