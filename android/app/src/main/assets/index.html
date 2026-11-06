@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Endless Crowd Runner 3D - Playable Preview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background: #11141a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      color: #fff;
+    }
+    #game-container {
+      position: relative;
+      width: 100vw;
+      max-width: 440px;
+      height: 100vh;
+      max-height: 880px;
+      background: #5ea8ea;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+    .ui-layer {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 16px 20px;
+      pointer-events: auto;
+    }
+    .hud-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .hud-dist {
+      font-size: 28px;
+      font-weight: 900;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .hud-best {
+      font-size: 14px;
+      font-weight: bold;
+      color: #ffd152;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+    .hud-weapon {
+      background: rgba(0,0,0,0.4);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 4px;
+      align-self: flex-start;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .hud-fps {
+      font-size: 11px;
+      background: rgba(0,0,0,0.5);
+      padding: 3px 6px;
+      border-radius: 6px;
+      color: #8aff80;
+      align-self: flex-end;
+    }
+    .overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(14, 18, 26, 0.92);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      pointer-events: auto;
+      text-align: center;
+      padding: 30px;
+      z-index: 10;
+    }
+    .overlay h1 {
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #4da6ff, #00d2ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .overlay.game-over h1 {
+      background: linear-gradient(135deg, #ff4d4d, #ff8000);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .overlay p {
+      font-size: 16px;
+      color: #cbd5e1;
+      margin-bottom: 24px;
+    }
+    .overlay .score-val {
+      font-size: 32px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .overlay .badge {
+      background: #ffd700;
+      color: #111;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+      display: inline-block;
+    }
+    .btn {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 900;
+      padding: 16px 42px;
+      border-radius: 30px;
+      border: none;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .btn:active {
+      transform: scale(0.96);
+    }
+    .audio-btn {
+      margin-top: 18px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #94a3b8;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="ui-layer">
+      <div class="hud" id="hud">
+        <div class="hud-left">
+          <div class="hud-dist" id="distDisplay">0m</div>
+          <div class="hud-best" id="bestDisplay">BEST: 0m</div>
+          <div class="hud-weapon" id="weaponDisplay">UNARMED</div>
+        </div>
+        <div class="hud-fps" id="fpsDisplay">60 FPS</div>
+      </div>
+    </div>
+
+    <div class="overlay" id="mainMenu">
+      <h1>CROWD RUNNER<br>3D</h1>
+      <p>Drag left / right to steer your crowd.<br>Pass through math gates and defeat enemies!</p>
+      <div class="score-val" id="menuBestScore">BEST: 0m</div>
+      <button class="btn" id="startBtn">TAP TO RUN</button>
+      <button class="audio-btn" id="soundToggleBtn">SOUND: ON</button>
+    </div>
+
+    <div class="overlay game-over" id="gameOverMenu" style="display: none;">
+      <h1>WIPED OUT!</h1>
+      <div class="score-val" id="finalScoreDisplay">0m</div>
+      <div class="badge" id="newRecordBadge" style="display: none;">*** NEW HIGH SCORE ***</div>
+      <p id="gameOverBest">BEST: 0m</p>
+      <button class="btn" id="retryBtn">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <script>
+    // --- AUDIO SYNTHESIZER (Web Audio API) ---
+    class SoundSynth {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+      playChirp(startFreq, endFreq, dur) {
+        if (!this.enabled || !this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        const t = this.ctx.currentTime;
+        osc.frequency.setValueAtTime(startFreq, t);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, t + dur);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + dur);
+        osc.start(t);
+        osc.stop(t + dur);
+      }
+      playGatePositive() {
+        this.playChirp(523, 1046, 0.2);
+      }
+      playGateNegative() {
+        if (!this.enabled || !this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        const t = this.ctx.currentTime;
+        osc.frequency.setValueAtTime(160, t);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.25);
+        osc.start(t);
+        osc.stop(t + 0.25);
+      }
+      playGunshot() {
+        if (!this.enabled || !this.ctx) return;
+        const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.08, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.2));
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.ctx.destination);
+        src.start();
+      }
+      playExplosion() {
+        if (!this.enabled || !this.ctx) return;
+        const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.4, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.25));
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.ctx.destination);
+        src.start();
+      }
+    }
+
+    const sound = new SoundSynth();
+
+    // --- GAME ENGINE ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('game-container');
+
+    let W, H;
+    function resize() {
+      W = canvas.width = container.clientWidth;
+      H = canvas.height = container.clientHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // 3D Projection Settings
+    const CAM_Y = 280;
+    const CAM_Z = -220;
+    const FOV = 320;
+    const ROAD_W = 280;
+
+    function project(x, y, z) {
+      const relZ = z - playerZ;
+      if (relZ <= 10) return null;
+      const scale = FOV / relZ;
+      return {
+        x: W / 2 + (x - playerX) * scale,
+        y: H / 2 + CAM_Y * scale - y * scale,
+        scale: scale,
+        z: relZ
+      };
+    }
+
+    // State
+    let gameState = 'MENU';
+    let playerZ = 0;
+    let playerX = 0;
+    let targetX = 0;
+    let runSpeed = 240; // px/sec
+    let count = 1;
+    let bestScore = parseInt(localStorage.getItem('ECR_Best') || '0', 10);
+    let weaponTier = 0; // 0=Unarmed, 1=Pistol, 2=SMG, 3=Shotgun, 4=AR, 5=Minigun
+    const weaponNames = ['UNARMED', 'PISTOL', 'SMG', 'SHOTGUN', 'ASSAULT RIFLE', 'MINIGUN'];
+    const weaponFireRates = [0, 2.5, 5.0, 1.4, 7.0, 14.0];
+    const weaponDamages = [0, 10, 12, 16, 22, 28];
+    let fireTimer = 0;
+
+    let items = []; // Gates, Enemies, Obstacles, Bosses, Pickups
+    let bullets = [];
+    let particles = [];
+    let floatingTexts = [];
+    let nextSpawnZ = 300;
+
+    // Golden ratio spiral formation
+    function getFormationOffset(i) {
+      if (i === 0) return { x: 0, z: 0 };
+      const radius = 14 * Math.sqrt(i);
+      const angle = i * 2.39996323;
+      return {
+        x: radius * Math.cos(angle) * 1.2,
+        z: radius * Math.sin(angle)
+      };
+    }
+
+    // Input Handling
+    let isDragging = false;
+    let lastMouseX = 0;
+
+    function onPointerDown(e) {
+      isDragging = true;
+      lastMouseX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      sound.init();
+    }
+    function onPointerMove(e) {
+      if (!isDragging || gameState !== 'PLAYING') return;
+      const curX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      const deltaX = curX - lastMouseX;
+      lastMouseX = curX;
+      targetX += deltaX * 1.5;
+      const maxClamp = (ROAD_W / 2) - Math.min(60, Math.sqrt(count) * 8);
+      targetX = Math.max(-maxClamp, Math.min(maxClamp, targetX));
+    }
+    function onPointerUp() { isDragging = false; }
+
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchstart', onPointerDown, { passive: true });
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    window.addEventListener('touchend', onPointerUp);
+
+    // Generation
+    function spawnChunk() {
+      const z = nextSpawnZ;
+      const roll = Math.random();
+
+      if (roll < 0.35) {
+        // Gates (Left and Right)
+        const leftPositive = Math.random() < 0.6;
+        const rightPositive = !leftPositive || Math.random() < 0.4;
+        items.push({
+          type: 'GATE_ROW',
+          z: z,
+          left: generateGate(leftPositive),
+          right: generateGate(rightPositive),
+          triggered: false
+        });
+      } else if (roll < 0.65) {
+        // Enemy Mob
+        const enemyCount = Math.min(120, Math.round(8 + (playerZ / 300) * 4));
+        items.push({
+          type: 'ENEMY_MOB',
+          z: z,
+          x: (Math.random() * 80 - 40),
+          count: enemyCount,
+          maxCount: enemyCount,
+          hasGunner: Math.random() < 0.4,
+          gunnerTimer: 0.8
+        });
+      } else if (roll < 0.82) {
+        // Obstacle (Spinning Blade or Wall)
+        if (Math.random() < 0.5) {
+          items.push({ type: 'SPINNING_BLADE', z: z, angle: 0 });
+        } else {
+          items.push({ type: 'WALL', z: z, gapX: (Math.random() * 100 - 50), gapW: 90 });
+        }
+      } else {
+        // Reward: Weapon crate or Squad beacon
+        if (Math.random() < 0.5 && weaponTier < 5) {
+          items.push({ type: 'WEAPON_PICKUP', z: z, x: (Math.random() * 80 - 40), tier: weaponTier + 1 });
+        } else {
+          items.push({ type: 'SQUAD_PICKUP', z: z, x: (Math.random() * 80 - 40), count: 10 });
+        }
+      }
+
+      // Boss encounter every 3000px
+      if (Math.floor((z + 1200) / 3200) > Math.floor(z / 3200)) {
+        items.push({
+          type: 'BOSS',
+          z: z + 500,
+          hp: 200 + Math.floor(playerZ / 2500) * 150,
+          maxHp: 200 + Math.floor(playerZ / 2500) * 150
+        });
+        nextSpawnZ += 500;
+      }
+
+      nextSpawnZ += 550;
+    }
+
+    function generateGate(isPositive) {
+      if (isPositive) {
+        const isMult = Math.random() < 0.4;
+        return isMult ? { op: 'x', val: [2, 3, 5][Math.floor(Math.random() * 3)] }
+                      : { op: '+', val: [5, 10, 20, 50][Math.floor(Math.random() * 4)] };
+      } else {
+        const isDiv = Math.random() < 0.3;
+        return isDiv ? { op: '/', val: [2, 3][Math.floor(Math.random() * 2)] }
+                     : { op: '-', val: [5, 10, 20][Math.floor(Math.random() * 3)] };
+      }
+    }
+
+    function spawnFloatingText(text, x, y, color) {
+      floatingTexts.push({ text, x, y, color, life: 1.0, maxLife: 1.0 });
+    }
+
+    function spawnParticles(x, y, z, color, num = 8) {
+      for (let i = 0; i < num; i++) {
+        particles.push({
+          x: x + (Math.random() * 12 - 6),
+          y: y + Math.random() * 15,
+          z: z + (Math.random() * 12 - 6),
+          vx: (Math.random() * 60 - 30),
+          vy: Math.random() * 80 + 30,
+          vz: (Math.random() * 40 - 20),
+          color: color,
+          life: 0.5
+        });
+      }
+    }
+
+    function startGame() {
+      gameState = 'PLAYING';
+      playerZ = 0;
+      playerX = 0;
+      targetX = 0;
+      count = 1;
+      weaponTier = 0;
+      items = [];
+      bullets = [];
+      particles = [];
+      floatingTexts = [];
+      nextSpawnZ = 350;
+      document.getElementById('mainMenu').style.display = 'none';
+      document.getElementById('gameOverMenu').style.display = 'none';
+      document.getElementById('weaponDisplay').innerText = weaponNames[0];
+      for (let i = 0; i < 4; i++) spawnChunk();
+    }
+
+    function gameOver() {
+      gameState = 'GAME_OVER';
+      sound.playExplosion();
+      const dist = Math.floor(playerZ / 10);
+      let isNew = false;
+      if (dist > bestScore) {
+        bestScore = dist;
+        localStorage.setItem('ECR_Best', bestScore.toString());
+        isNew = true;
+      }
+      document.getElementById('finalScoreDisplay').innerText = dist + 'm';
+      document.getElementById('gameOverBest').innerText = 'BEST: ' + bestScore + 'm';
+      document.getElementById('newRecordBadge').style.display = isNew ? 'inline-block' : 'none';
+      document.getElementById('gameOverMenu').style.display = 'flex';
+      document.getElementById('bestDisplay').innerText = 'BEST: ' + bestScore + 'm';
+    }
+
+    // --- GAME LOOP ---
+    let lastTime = performance.now();
+    let fpsFrames = 0, fpsTimer = 0, curFps = 60;
+
+    function update(dt) {
+      if (gameState !== 'PLAYING') return;
+
+      // Speed ramps with distance
+      runSpeed = 240 + Math.min(220, (playerZ / 1000) * 35);
+      playerZ += runSpeed * dt;
+      playerX += (targetX - playerX) * 14 * dt;
+
+      // HUD updates
+      document.getElementById('distDisplay').innerText = Math.floor(playerZ / 10) + 'm';
+
+      // Spawn chunks
+      while (nextSpawnZ < playerZ + 2400) {
+        spawnChunk();
+      }
+
+      // Auto-firing
+      if (weaponTier > 0) {
+        fireTimer -= dt;
+        if (fireTimer <= 0) {
+          fireTimer = 1.0 / weaponFireRates[weaponTier];
+          // Find target ahead
+          let target = null;
+          let minDist = 700;
+          for (let item of items) {
+            if ((item.type === 'ENEMY_MOB' && item.count > 0) || (item.type === 'BOSS' && item.hp > 0)) {
+              const d = item.z - playerZ;
+              if (d > 20 && d < minDist) {
+                minDist = d;
+                target = item;
+              }
+            }
+          }
+          if (target) {
+            sound.playGunshot();
+            const numShots = weaponTier === 3 ? 4 : 1;
+            for (let s = 0; s < numShots; s++) {
+              bullets.push({
+                x: playerX + (Math.random() * 20 - 10),
+                y: 12,
+                z: playerZ + 20,
+                target: target,
+                damage: weaponDamages[weaponTier],
+                isPlayer: true
+              });
+            }
+          }
+        }
+      }
+
+      // Update Bullets
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        if (b.isPlayer) {
+          b.z += 900 * dt;
+          if (b.target) {
+            b.x += ( (b.target.x || 0) - b.x ) * 8 * dt;
+            if (b.z >= b.target.z - 10) {
+              // Hit target!
+              if (b.target.type === 'ENEMY_MOB') {
+                const kills = Math.min(b.target.count, Math.ceil(b.damage / 10));
+                b.target.count -= kills;
+                spawnParticles(b.target.x, 15, b.target.z, '#ff4444', 4);
+                if (b.target.count <= 0) {
+                  spawnFloatingText('CLEARED!', b.target.x, b.target.z, '#ffff00');
+                }
+              } else if (b.target.type === 'BOSS') {
+                b.target.hp -= b.damage;
+                spawnParticles(0, 30, b.target.z, '#ffaa00', 6);
+                if (b.target.hp <= 0 && !b.target.defeated) {
+                  b.target.defeated = true;
+                  count += 25;
+                  sound.playExplosion();
+                  spawnFloatingText('+25 SQUAD!', 0, b.target.z, '#00ff88');
+                }
+              }
+              bullets.splice(i, 1);
+              continue;
+            }
+          }
+          if (b.z > playerZ + 800) bullets.splice(i, 1);
+        } else {
+          // Enemy bullet
+          b.z -= 600 * dt;
+          if (b.z <= playerZ + 15) {
+            count--;
+            spawnParticles(playerX, 10, playerZ, '#00a2ff', 4);
+            bullets.splice(i, 1);
+            if (count <= 0) gameOver();
+            continue;
+          }
+          if (b.z < playerZ - 50) bullets.splice(i, 1);
+        }
+      }
+
+      // Update Items (Gates, Mobs, Obstacles, Pickups)
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+
+        // Enemy gunner shooting
+        if (item.type === 'ENEMY_MOB' && item.hasGunner && item.count > 0 && item.z - playerZ < 600 && item.z > playerZ + 50) {
+          item.gunnerTimer -= dt;
+          if (item.gunnerTimer <= 0) {
+            item.gunnerTimer = 1.3;
+            bullets.push({
+              x: item.x,
+              y: 12,
+              z: item.z,
+              isPlayer: false
+            });
+          }
+        }
+
+        // Gate passing
+        if (item.type === 'GATE_ROW' && !item.triggered && playerZ >= item.z - 20) {
+          item.triggered = true;
+          // Determine overlapping gate
+          const chosenGate = (playerX < 0) ? item.left : item.right;
+          const old = count;
+          if (chosenGate.op === '+') count += chosenGate.val;
+          else if (chosenGate.op === 'x') count *= chosenGate.val;
+          else if (chosenGate.op === '-') count = Math.max(0, count - chosenGate.val);
+          else if (chosenGate.op === '/') count = Math.floor(count / chosenGate.val);
+
+          const delta = count - old;
+          if (delta >= 0) {
+            sound.playGatePositive();
+            spawnFloatingText(`+${delta}`, playerX, item.z, '#00ff88');
+            spawnParticles(playerX, 15, item.z, '#00d2ff', 12);
+          } else {
+            sound.playGateNegative();
+            spawnFloatingText(`${delta}`, playerX, item.z, '#ff4444');
+            spawnParticles(playerX, 15, item.z, '#ff4444', 8);
+          }
+
+          if (count <= 0) {
+            gameOver();
+            return;
+          }
+        }
+
+        // Enemy mob melee collision
+        if (item.type === 'ENEMY_MOB' && item.count > 0 && playerZ >= item.z - 25 && playerZ <= item.z + 40) {
+          if (Math.abs(playerX - item.x) < 70) {
+            const clash = Math.min(count, item.count, 2);
+            count -= clash;
+            item.count -= clash;
+            spawnParticles(item.x, 10, item.z, '#ff4444', 3);
+            if (count <= 0) {
+              gameOver();
+              return;
+            }
+          }
+        }
+
+        // Obstacles
+        if (item.type === 'SPINNING_BLADE') {
+          item.angle += dt * 6;
+          if (Math.abs(playerZ - item.z) < 25) {
+            count--;
+            spawnParticles(playerX, 10, item.z, '#00a2ff', 3);
+            if (count <= 0) { gameOver(); return; }
+          }
+        } else if (item.type === 'WALL' && Math.abs(playerZ - item.z) < 20) {
+          // Check if outside gap
+          if (Math.abs(playerX - item.gapX) > item.gapW / 2) {
+            count = Math.max(0, count - 3);
+            spawnParticles(playerX, 10, item.z, '#ff4444', 6);
+            if (count <= 0) { gameOver(); return; }
+          }
+        }
+
+        // Pickups
+        if (item.type === 'WEAPON_PICKUP' && !item.collected && Math.abs(playerZ - item.z) < 30 && Math.abs(playerX - item.x) < 50) {
+          item.collected = true;
+          weaponTier = item.tier;
+          document.getElementById('weaponDisplay').innerText = weaponNames[weaponTier];
+          sound.playChirp(400, 1200, 0.3);
+          spawnFloatingText(weaponNames[weaponTier] + '!', playerX, item.z, '#00ffff');
+        } else if (item.type === 'SQUAD_PICKUP' && !item.collected && Math.abs(playerZ - item.z) < 30 && Math.abs(playerX - item.x) < 50) {
+          item.collected = true;
+          count += item.count;
+          sound.playChirp(400, 900, 0.25);
+          spawnFloatingText('+10 SQUAD!', playerX, item.z, '#00ff88');
+          spawnParticles(playerX, 15, item.z, '#00ffff', 10);
+        }
+
+        // Clean passed items
+        if (item.z < playerZ - 200) {
+          items.splice(i, 1);
+        }
+      }
+
+      // Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy -= 180 * dt; // Gravity
+        p.z += p.vz * dt;
+        p.life -= dt;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // Floating Texts
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.life -= dt;
+        if (ft.life <= 0) floatingTexts.splice(i, 1);
+      }
+    }
+
+    // --- RENDERING ---
+    function render() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Sky gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+      skyGrad.addColorStop(0, '#3878c7');
+      skyGrad.addColorStop(0.65, '#5ea8ea');
+      skyGrad.addColorStop(1, '#9ad0ff');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Road Surface
+      const near = project(0, 0, playerZ + 20);
+      const far = project(0, 0, playerZ + 1200);
+
+      if (near && far) {
+        ctx.fillStyle = '#2d3340';
+        ctx.beginPath();
+        ctx.moveTo(near.x - (ROAD_W / 2) * near.scale, near.y);
+        ctx.lineTo(near.x + (ROAD_W / 2) * near.scale, near.y);
+        ctx.lineTo(far.x + (ROAD_W / 2) * far.scale, far.y);
+        ctx.lineTo(far.x - (ROAD_W / 2) * far.scale, far.y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Curbs
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.moveTo(near.x - (ROAD_W / 2) * near.scale - 8 * near.scale, near.y);
+        ctx.lineTo(near.x - (ROAD_W / 2) * near.scale, near.y);
+        ctx.lineTo(far.x - (ROAD_W / 2) * far.scale, far.y);
+        ctx.lineTo(far.x - (ROAD_W / 2) * far.scale - 8 * far.scale, far.y);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(near.x + (ROAD_W / 2) * near.scale, near.y);
+        ctx.lineTo(near.x + (ROAD_W / 2) * near.scale + 8 * near.scale, near.y);
+        ctx.lineTo(far.x + (ROAD_W / 2) * far.scale + 8 * far.scale, far.y);
+        ctx.lineTo(far.x + (ROAD_W / 2) * far.scale, far.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Render Items (back to front sorting)
+      const renderList = [...items].sort((a, b) => b.z - a.z);
+
+      for (let item of renderList) {
+        if (item.type === 'GATE_ROW') {
+          renderGateRow(item);
+        } else if (item.type === 'ENEMY_MOB' && item.count > 0) {
+          renderEnemyMob(item);
+        } else if (item.type === 'SPINNING_BLADE') {
+          renderSpinningBlade(item);
+        } else if (item.type === 'WALL') {
+          renderWall(item);
+        } else if (item.type === 'BOSS' && item.hp > 0) {
+          renderBoss(item);
+        } else if ((item.type === 'WEAPON_PICKUP' || item.type === 'SQUAD_PICKUP') && !item.collected) {
+          renderPickup(item);
+        }
+      }
+
+      // Render Bullets
+      for (let b of bullets) {
+        const pt = project(b.x, b.y, b.z);
+        if (pt) {
+          ctx.fillStyle = b.isPlayer ? '#ffe600' : '#ff2222';
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, Math.max(2, 4 * pt.scale), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Render Player Crowd Stickmen
+      renderPlayerCrowd();
+
+      // Render Particles
+      for (let p of particles) {
+        const pt = project(p.x, p.y, p.z);
+        if (pt) {
+          ctx.fillStyle = p.color;
+          ctx.fillRect(pt.x - 2 * pt.scale, pt.y - 2 * pt.scale, 4 * pt.scale, 4 * pt.scale);
+        }
+      }
+
+      // Render Floating Texts
+      for (let ft of floatingTexts) {
+        const pt = project(ft.x, 25 + (1.0 - ft.life) * 30, ft.y);
+        if (pt) {
+          ctx.font = `bold ${Math.round(20 * pt.scale)}px sans-serif`;
+          ctx.fillStyle = ft.color;
+          ctx.textAlign = 'center';
+          ctx.fillText(ft.text, pt.x, pt.y);
+        }
+      }
+    }
+
+    function renderPlayerCrowd() {
+      const renderCount = Math.min(count, 120);
+      for (let i = 0; i < renderCount; i++) {
+        const offset = getFormationOffset(i);
+        const pt = project(playerX + offset.x, 0, playerZ + offset.z);
+        if (pt) {
+          const s = pt.scale;
+          // Blue Stickman
+          ctx.fillStyle = '#0066ff';
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y - 22 * s, 6 * s, 0, Math.PI * 2); // Head
+          ctx.fill();
+          ctx.fillRect(pt.x - 4 * s, pt.y - 16 * s, 8 * s, 14 * s); // Body
+        }
+      }
+
+      // Floating Count Badge above crowd leader
+      const lead = project(playerX, 35 + Math.sqrt(count) * 2, playerZ);
+      if (lead) {
+        ctx.fillStyle = '#00d2ff';
+        ctx.font = `900 ${Math.round(24 * lead.scale)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(count.toString(), lead.x, lead.y);
+      }
+    }
+
+    function renderEnemyMob(mob) {
+      const p = project(mob.x, 0, mob.z);
+      if (!p) return;
+      const renderUnits = Math.min(mob.count, 40);
+      for (let i = 0; i < renderUnits; i++) {
+        const offset = getFormationOffset(i);
+        const pt = project(mob.x + offset.x, 0, mob.z + offset.z);
+        if (pt) {
+          const s = pt.scale;
+          ctx.fillStyle = '#e61e1e';
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y - 22 * s, 6 * s, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(pt.x - 4 * s, pt.y - 16 * s, 8 * s, 14 * s);
+        }
+      }
+
+      // Count Badge
+      const badge = project(mob.x, 40, mob.z);
+      if (badge) {
+        ctx.fillStyle = '#ff3333';
+        ctx.font = `bold ${Math.round(20 * badge.scale)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(mob.count.toString(), badge.x, badge.y);
+      }
+    }
+
+    function renderGateRow(row) {
+      const halfW = ROAD_W / 2;
+      const leftP = project(-halfW / 2, 0, row.z);
+      const rightP = project(halfW / 2, 0, row.z);
+      const gateW = halfW * 0.9;
+
+      if (leftP) renderSingleGate(leftP, row.left, gateW);
+      if (rightP) renderSingleGate(rightP, row.right, gateW);
+    }
+
+    function renderSingleGate(pt, gate, w) {
+      const s = pt.scale;
+      const isPos = gate.op === '+' || gate.op === 'x';
+      ctx.fillStyle = isPos ? 'rgba(16, 185, 129, 0.75)' : 'rgba(239, 68, 68, 0.75)';
+      ctx.fillRect(pt.x - (w / 2) * s, pt.y - 60 * s, w * s, 60 * s);
+
+      ctx.strokeStyle = isPos ? '#34d399' : '#f87171';
+      ctx.lineWidth = 3 * s;
+      ctx.strokeRect(pt.x - (w / 2) * s, pt.y - 60 * s, w * s, 60 * s);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `900 ${Math.round(26 * s)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`${gate.op}${gate.val}`, pt.x, pt.y - 25 * s);
+    }
+
+    function renderSpinningBlade(item) {
+      const pt = project(0, 10, item.z);
+      if (!pt) return;
+      const s = pt.scale;
+      ctx.save();
+      ctx.translate(pt.x, pt.y);
+      ctx.rotate(item.angle);
+      ctx.fillStyle = '#ff1111';
+      ctx.fillRect(-45 * s, -6 * s, 90 * s, 12 * s);
+      ctx.restore();
+    }
+
+    function renderWall(item) {
+      const pt = project(0, 0, item.z);
+      if (!pt) return;
+      const s = pt.scale;
+      ctx.fillStyle = '#e11d48';
+      // Left segment
+      const leftEdge = -ROAD_W / 2;
+      const gapMin = item.gapX - item.gapW / 2;
+      const gapMax = item.gapX + item.gapW / 2;
+      const rightEdge = ROAD_W / 2;
+
+      const pLeft = project((leftEdge + gapMin) / 2, 0, item.z);
+      if (pLeft) ctx.fillRect(pLeft.x - ((gapMin - leftEdge) / 2) * s, pLeft.y - 45 * s, (gapMin - leftEdge) * s, 45 * s);
+
+      const pRight = project((gapMax + rightEdge) / 2, 0, item.z);
+      if (pRight) ctx.fillRect(pRight.x - ((rightEdge - gapMax) / 2) * s, pRight.y - 45 * s, (rightEdge - gapMax) * s, 45 * s);
+    }
+
+    function renderBoss(boss) {
+      const pt = project(0, 0, boss.z);
+      if (!pt) return;
+      const s = pt.scale;
+      // Giant Titan
+      ctx.fillStyle = '#990000';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y - 70 * s, 20 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(pt.x - 16 * s, pt.y - 50 * s, 32 * s, 48 * s);
+
+      // HP Bar
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(pt.x - 50 * s, pt.y - 105 * s, 100 * s, 10 * s);
+      ctx.fillStyle = '#00ff88';
+      const pct = Math.max(0, boss.hp / boss.maxHp);
+      ctx.fillRect(pt.x - 49 * s, pt.y - 104 * s, 98 * s * pct, 8 * s);
+
+      ctx.fillStyle = '#ffd700';
+      ctx.font = `bold ${Math.round(14 * s)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('TITAN CRUSHER', pt.x, pt.y - 110 * s);
+    }
+
+    function renderPickup(item) {
+      const pt = project(item.x, 15, item.z);
+      if (!pt) return;
+      const s = pt.scale;
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(pt.x - 12 * s, pt.y - 12 * s, 24 * s, 24 * s);
+      ctx.fillStyle = '#111';
+      ctx.font = `bold ${Math.round(10 * s)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(item.type === 'WEAPON_PICKUP' ? 'GUN' : '+10', pt.x, pt.y + 4 * s);
+    }
+
+    // Main Loop
+    function loop(now) {
+      const dt = Math.min(0.1, (now - lastTime) / 1000);
+      lastTime = now;
+
+      fpsFrames++;
+      fpsTimer += dt;
+      if (fpsTimer >= 0.5) {
+        curFps = Math.round(fpsFrames / fpsTimer);
+        document.getElementById('fpsDisplay').innerText = `${curFps} FPS`;
+        fpsFrames = 0;
+        fpsTimer = 0;
+      }
+
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    // UI Listeners
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('retryBtn').addEventListener('click', startGame);
+    document.getElementById('soundToggleBtn').addEventListener('click', () => {
+      sound.enabled = !sound.enabled;
+      document.getElementById('soundToggleBtn').innerText = sound.enabled ? 'SOUND: ON' : 'SOUND: OFF';
+    });
+    document.getElementById('bestDisplay').innerText = 'BEST: ' + bestScore + 'm';
+    document.getElementById('menuBestScore').innerText = 'BEST: ' + bestScore + 'm';
+  </script>
+</body>
+</html>
