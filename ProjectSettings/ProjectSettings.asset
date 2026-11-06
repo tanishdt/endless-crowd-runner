@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 26
+  productGUID: 147e7046ea69b2d41a8a29b4db0e4392
+  AndroidProfiler: 0
+  AndroidFilterTouchesWhenObscured: 0
+  AndroidEnableSustainedPerformanceMode: 0
+  defaultScreenOrientation: 3
+  targetDevice: 2
+  useOnDemandResources: 0
+  accelerometerFrequency: 60
+  companyName: PlayGames
+  productName: Endless Crowd Runner
+  defaultCursor: {fileID: 0}
+  cursorHotspot: {x: 0, y: 0}
+  m_SplashScreenBackgroundColor: {r: 0.137, g: 0.145, b: 0.160, a: 1}
+  defaultScreenWidth: 1080
+  defaultScreenHeight: 1920
+  defaultScreenWidthWeb: 960
+  defaultScreenHeightWeb: 600
+  m_RenderingPath: 1
+  m_MobileRenderingPath: 1
+  m_ActiveColorSpace: 1
+  bundleVersion: 1.0.0
+  bundleCode: 1
+  applicationIdentifier:
+    Android: com.playgames.endlesscrowdrunner
+    Standalone: com.playgames.endlesscrowdrunner
+  defaultInterfaceOrientation: 3
+  allowedAutorotateToPortrait: 1
+  allowedAutorotateToPortraitUpsideDown: 0
+  allowedAutorotateToLandscapeRight: 0
+  allowedAutorotateToLandscapeLeft: 0
+  useOSAutorotation: 0
+  use32BitDisplayBuffer: 1
+  preserveFramebufferAlpha: 0
+  androidTargetSdkVersion: 34
+  androidMinSdkVersion: 24
+  targetFrameRate:
+    Android: 60
+    Standalone: 60
