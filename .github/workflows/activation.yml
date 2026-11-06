@@ -8,6 +8,11 @@ jobs:
     name: Request manual activation file
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
       - name: Request manual activation file
         id: step_one
         uses: game-ci/unity-builder@v4
