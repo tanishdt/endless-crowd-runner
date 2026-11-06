@@ -13,14 +13,16 @@ jobs:
         with:
           lfs: true
 
-      - name: Request manual activation file
-        id: step_one
-        uses: game-ci/unity-builder@v4
-        with:
-          entrypoint: /request_activation.sh
+      - name: Generate .alf file
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE":/project \
+            unityci/editor:ubuntu-2022.3.20f1-android-3 \
+            unity-editor -batchmode -nographics -createManualActivationFile -logfile /dev/stdout || true
+          ls -la
 
       - name: Expose as artifact
         uses: actions/upload-artifact@v4
         with:
           name: manual-activation-file
-          path: ${{ steps.step_one.outputs.filePath }}
+          path: '**/*.alf'
